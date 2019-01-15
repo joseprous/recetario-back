@@ -1,0 +1,16 @@
+-- By default this file is used by `persistFileWith` in Model.hs (which is imported by Foundation.hs)
+-- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
+
+Receta
+    nombre Text
+
+Ingrediente
+    nombre Text
+    cantidad Double
+    unidad Text
+    recetaId RecetaId
+
+Paso
+    numero Int
+    texto Text
+    recetaId RecetaId
