@@ -105,6 +105,7 @@ getRecetasR :: Handler Value
 getRecetasR = do
   recetas <- runDB $ selectList [] [Asc RecetaNombre]
   l <- mapM recetaJson recetas
+  addHeader "Access-Control-Allow-Origin" "*"
   return $ Array $ fromList l
 
 postRecetasR :: Handler ()
@@ -121,12 +122,14 @@ postRecetasR = do
            { pasoNumero = pNumero p
            , pasoTexto = pTexto p
            , pasoRecetaId = rId}) (rPasos msg)
+  addHeader "Access-Control-Allow-Origin" "*"
   sendResponseStatus status201 ("Created" :: Text)
 
 getRecetaR :: Int64 -> Handler Value
 getRecetaR n = do
   let recetaId = toSqlKey n :: Key Receta
   receta <- runDB $ get recetaId
+  addHeader "Access-Control-Allow-Origin" "*"
   case receta of
     (Just r) -> recetaJson (Entity recetaId r)
     Nothing -> return $ object []
@@ -138,4 +141,5 @@ deleteRecetaR n = do
     deleteWhere [IngredienteRecetaId ==. recetaId]
     deleteWhere [PasoRecetaId ==. recetaId]
     delete recetaId
+  addHeader "Access-Control-Allow-Origin" "*"
   sendResponseStatus status200 ("Deleted" :: Text)
