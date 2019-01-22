@@ -38,6 +38,9 @@ import Network.Wai.Middleware.RequestLogger (Destination (Logger),
 import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
                                              toLogStr)
 
+import Network.Wai.Middleware.Cors
+import Network.Wai.Middleware.AddHeaders (addHeaders)
+
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Recetas
@@ -84,6 +87,31 @@ makeFoundation appSettings = do
     -- Return the foundation
     return $ mkFoundation pool
 
+allowCsrf :: Middleware
+allowCsrf = addHeaders [("Access-Control-Allow-Headers", "x-csrf-token,authorization")]
+
+-- | CORS middleware configured with 'appCorsResourcePolicy'.
+corsified :: Middleware
+corsified = cors (const $ Just appCorsResourcePolicy)
+
+-- | Cors resource policy to be used with 'corsified' middleware.
+--
+-- This policy will set the following:
+--
+-- * RequestHeaders: @Content-Type@
+-- * MethodsAllowed: @OPTIONS, GET, PUT, POST@
+appCorsResourcePolicy :: CorsResourcePolicy
+appCorsResourcePolicy = CorsResourcePolicy {
+    corsOrigins        = Nothing
+  , corsMethods        = ["OPTIONS", "GET", "PUT", "POST"]
+  , corsRequestHeaders = ["Authorization", "Content-Type"]
+  , corsExposedHeaders = Nothing
+  , corsMaxAge         = Nothing
+  , corsVaryOrigin     = False
+  , corsRequireOrigin  = False
+  , corsIgnoreFailures = False
+}
+
 -- | Convert our foundation to a WAI Application by calling @toWaiAppPlain@ and
 -- applying some additional middlewares.
 makeApplication :: App -> IO Application
@@ -91,7 +119,7 @@ makeApplication foundation = do
     logWare <- makeLogWare foundation
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ logWare $ defaultMiddlewaresNoLogging appPlain
+    return $ logWare . allowCsrf . corsified $ appPlain
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
